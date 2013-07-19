@@ -1,0 +1,16 @@
+96 96 96 ! FFT box from espresso scf out file
+20.0     ! alat in bohr, assuming cubic box
+4        ! sqrt of number of procs
+12.0     ! dielectric cutoff in ry
+12.0     ! cutoff radius in bohr for spherical coulomb truncation
+100      ! total number of bands in evc files
+8        ! number of occupied down spin states
+1        ! how many more occupied up spin states
+50       ! number of empty states used for calc
+9        ! state for which we want sigma
+1        ! spin of the state for which we want sigma
+0.01     ! broadening in sigma in hartree
+-20.0    ! 1st freq for which we evaluate sigma (eV)
+0.1      ! step size (eV)
+200      ! number of freqs
+47833    ! Ngk

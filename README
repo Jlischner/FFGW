@@ -1,0 +1,22 @@
+To compile on HOPPER:
+----------------------
+1) module load fftw
+2) make
+
+Getting mean-field input from QUANTUM ESPRESSO:
+-----------------------------------------------
+1) run scf calc to get ground state density
+2) run nscf calc to get empty states 
+2b) for defects: need shifted q-grid calculation
+3) run pw2ffgw.sh in ESPRESSO dir that contains wavefunctions and other output
+4) copy wavefunctions (evc1 and evc2) and energies (eigenval1 and eigenval2)
+and G-vectors (gkvectors) into GW directory
+
+Note: ffgw can only do Gamma point calculations
+
+Run ffgw:
+---------
+1) modify inputcon file ffgw.inp
+2) sig_out contains 3 columns:
+freq grid -- ReSig+static remainder -- ImSig
+3) to solve Dyson equation needs Vxc (e.g. from pw2bgw converter)
