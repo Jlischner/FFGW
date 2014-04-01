@@ -39,7 +39,7 @@ program diel
   character(len=40) :: fil_indx,fil_evc1,fil_evc2,fil_evcq1,fil_evcq2,fil_e1,fil_e2,fil_gkv
 
   !variables for sigma part
-  integer :: IV_new, IS_new, nfreq,ib,ind_start,lenind,len
+  integer :: IV_new, IS_new, nfreq,ib,ind_start,lenind,len,is_mol
   integer, dimension(2) :: nc_new
   integer, allocatable, dimension(:) :: index_list,nindex_list,len_list
   real(DP) :: eta, SigX,stR,corr,ws_start,ws_step,elda,VMfac,corrtmp
@@ -75,6 +75,7 @@ program diel
   READ(10,*) ws_step
   READ(10,*) nfreq
   READ(10,*) Ngk
+  READ(10,*) is_mol
   CLOSE(10)
   
 !  S(1) = 96; S(2) = 96; S(3) = 96
@@ -302,29 +303,35 @@ program diel
      END DO
      CLOSE(14)
      
-     print *,"reading evcq1"
-     OPEN(15,FILE=fil_evcq1,form='formatted')
-     DO i=1,nbands*Ngk
-        READ(15,*) wfq1(i,1),wfq1(i,2)
-     END DO
-     CLOSE(15)
+     if( is_mol == 0) then
+        print *,"reading evcq1"
+        OPEN(15,FILE=fil_evcq1,form='formatted')
+        DO i=1,nbands*Ngk
+           READ(15,*) wfq1(i,1),wfq1(i,2)
+        END DO
+        CLOSE(15)
 
-     print *,"reading evcq2"
-     OPEN(16,FILE=fil_evcq2,form='formatted')
-     DO i=1,nbands*Ngk
-        READ(16,*) wfq2(i,1),wfq2(i,2)
-     END DO
-     CLOSE(16)
+        print *,"reading evcq2"
+        OPEN(16,FILE=fil_evcq2,form='formatted')
+        DO i=1,nbands*Ngk
+           READ(16,*) wfq2(i,1),wfq2(i,2)
+        END DO
+        CLOSE(16)
+     end if
      
      wfu = RESHAPE( cmplx( wf1(:,1), wf1(:,2) ), (/ Ngk,nbands /) )
      wf(:,:,1) = wfu(:,1:nv(1)+nc(1)) /SQRT(Vcell)
      wfd = RESHAPE( cmplx( wf2(:,1), wf2(:,2) ), (/ Ngk,nbands /) )
      wf(:,:,2) = wfd(:,1:nv(1)+nc(1)) /SQRT(Vcell)
 
-     wfu = RESHAPE( cmplx( wfq1(:,1), wfq1(:,2) ), (/ Ngk,nbands /) )
-     wfq(:,:,1) = wfu(:,1:nv(1)) /SQRT(Vcell)
-     wfd = RESHAPE( cmplx( wfq2(:,1), wfq2(:,2) ), (/ Ngk,nbands /) )
-     wfq(:,:,2) = wfd(:,1:nv(1)) /SQRT(Vcell)
+     if(is_mol == 1) then
+        wfq = wf
+     else
+        wfu = RESHAPE( cmplx( wfq1(:,1), wfq1(:,2) ), (/ Ngk,nbands /) )
+        wfq(:,:,1) = wfu(:,1:nv(1)) /SQRT(Vcell)
+        wfd = RESHAPE( cmplx( wfq2(:,1), wfq2(:,2) ), (/ Ngk,nbands /) )
+        wfq(:,:,2) = wfd(:,1:nv(1)) /SQRT(Vcell)
+     end if
 
      eigs(:,1) = eigs1(1:nv(1)+nc(1))
      eigs(:,2) = eigs2(1:nv(1)+nc(1))
@@ -685,6 +692,7 @@ program diel
   call pzheevd('V', 'U', npair, lvecs,1,1,descvecs, w,lz,1,1,descvecs, WORK,LWORK, RWORK,LRWORK,IWORK,LIWORK, ok)
   if(iam==master) print *,"done with inversion"
   w = SQRT(w)
+
   lvecs = lz
   deallocate(WORK,RWORK,IWORK,lz)
   !***************doing vecs = sqrt(de)*vecs/sqrt(w) ************************
@@ -728,8 +736,8 @@ program diel
   fil_indx = "indx"
   fil_evc1 = "evc1"
   fil_evc2 = "evc2"
-  fil_e1   = "eigenval1"
-  fil_e2   = "eigenval2"
+  fil_e1   = "eigenval_1"
+  fil_e2   = "eigenval_2"
 
   nc_new(1) = ncu
   nc_new(2) = ncd
@@ -755,6 +763,7 @@ program diel
   ALLOCATE( lVM(vecslrow,vecslcol) )  
   ALLOCATE( lVMC(vecslrow,vecslcol) )
 
+  deallocate(wf,wfq)
   ALLOCATE( wf_new(Ngk, nv(1)+nc(1), 2) , STAT=error)
   IF (error /= 0) THEN
      PRINT *, "could not allocate space for wf_new"; STOP
@@ -846,7 +855,7 @@ program diel
   call MPI_BCAST(wf_new, 4*(nv(1)+nc_new(1))*Ngk, MPI_COMPLEX,master,MPI_COMM_WORLD,ierr)
   call MPI_Barrier(MPI_COMM_WORLD,ierr)
 
-  deallocate(wf,wfq)
+  !deallocate(wf,wfq)
   
   !*******compute q=0 correction*********************************************
   VMfac = 0*4.0*pi/Vcell**2 * (48./pi*Vcell**2)**(1./3.)
@@ -1022,6 +1031,12 @@ program diel
            END DO
         end if
         
+        OPEN(21,FILE='poles.dat',form='formatted')
+        DO i=1,npair
+           WRITE(21,*) i,w(i)
+        END DO
+        CLOSE(21)
+
         DO Ind = 1,npair
            
            if(ib <= nv(IS_new)) then

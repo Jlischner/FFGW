@@ -9,8 +9,9 @@
 50       ! number of empty states used for calc
 9        ! state for which we want sigma
 1        ! spin of the state for which we want sigma
-0.01     ! broadening in sigma in hartree
+0.01     ! broadening in sigma in eV
 -20.0    ! 1st freq for which we evaluate sigma (eV)
 0.1      ! step size (eV)
 200      ! number of freqs
 47833    ! Ngk
+1        ! is molecule? (1=yes, 0=no)

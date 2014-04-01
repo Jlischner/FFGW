@@ -1,22 +1,27 @@
 To compile on HOPPER:
 ----------------------
-1) module load fftw
-2) make
+1) module unload fftw
+2) module load fftw/2.1.5.4
+3) make
 
 Getting mean-field input from QUANTUM ESPRESSO:
 -----------------------------------------------
 1) run scf calc to get ground state density
 2) run nscf calc to get empty states 
 2b) for defects: need shifted q-grid calculation
-3) run pw2ffgw.sh in ESPRESSO dir that contains wavefunctions and other output
-4) copy wavefunctions (evc1 and evc2) and energies (eigenval1 and eigenval2)
-and G-vectors (gkvectors) into GW directory
+3) convert ESPRESSO output to ascii:
+for non-magnetic systems: run pw2ffgw1.sh in director where wave functions are stored (something like ch4.save/K00001/)
+=> this creates 3 files: evc1, eigenval1 and gkvectors in that directory
+for magnetic systems: run pw2ffgw2.sh
+4) link input files:
+- go to directory where you want to run
+- link to evc1 and evc2 (for non-magnetic systems we also need evc2 = evc1)
+- link to eigenval1 and eigenval2 (for non-magnetic systems eigenval2 = eigenval1)
+- link to gkvectors
+- link to eigenvalues G - denoted eigenval_1 and eigenval_2 (for G0W0: eigenval_1=eigenval1)
+5) modify input file ffgw.inp
+6) run via: ./ffgw.x > out 
+7) analyse output stored in sig_out: 1st col is frq grid, 2nd col is ReSig, 3rd col is ImSig
+Note: that the static remainder is always included in ReSig
 
 Note: ffgw can only do Gamma point calculations
-
-Run ffgw:
----------
-1) modify inputcon file ffgw.inp
-2) sig_out contains 3 columns:
-freq grid -- ReSig+static remainder -- ImSig
-3) to solve Dyson equation needs Vxc (e.g. from pw2bgw converter)
